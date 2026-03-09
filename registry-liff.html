@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ทะเบียนรับ-ส่ง | กองพันทหารปืนใหญ่ที่ 5</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+Thai:wght@700;900&display=swap" rel="stylesheet">
 
@@ -438,6 +439,76 @@ select option { background: var(--surf); }
   td { border-color: #ccc; }
 }
 
+/* ── Advanced Search Panel ── */
+.adv-bar {
+  background: var(--bg2); border-bottom: 1px solid var(--bdr);
+  padding: 0 12px; overflow: hidden;
+  max-height: 0; transition: max-height .28s ease, padding .28s ease;
+}
+.adv-bar.open { max-height: 160px; padding: 10px 12px; }
+.adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media(min-width:640px){ .adv-grid { grid-template-columns: repeat(4,1fr); } }
+.adv-fld { display:flex; flex-direction:column; gap:3px; }
+.adv-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+.adv-fld input, .adv-fld select {
+  padding:7px 9px; background:var(--surf); border:1px solid var(--bdr2);
+  border-radius:8px; font-family:'Sarabun',sans-serif; font-size:12px;
+  color:var(--txt); outline:none; transition:border-color .17s;
+}
+.adv-fld input:focus, .adv-fld select:focus { border-color:var(--brass); }
+.adv-fld select option { background:var(--surf); }
+.adv-act { display:flex; gap:6px; margin-top:8px; }
+.adv-clr { padding:6px 14px; border:1px solid var(--bdr2); background:var(--surf2);
+  border-radius:8px; font-size:12px; font-weight:700; color:var(--muted);
+  cursor:pointer; transition:all .14s; }
+.adv-clr:hover { border-color:var(--brass); color:var(--txt); }
+.filter-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  background:rgba(200,168,75,.15); color:var(--brass2);
+  border:1px solid rgba(200,168,75,.3); border-radius:20px;
+  font-size:10px; font-weight:700; padding:2px 8px; margin-left:6px;
+}
+
+/* ── Dashboard Tab ── */
+.dash { display:none; padding:16px; flex-direction:column; gap:18px; }
+.dash.active { display:flex; }
+.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .dash-row { grid-template-columns:1fr; } }
+.dash-card {
+  background:var(--surf); border:1px solid var(--bdr2);
+  border-radius:14px; padding:16px; position:relative; overflow:hidden;
+}
+.dash-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.dash-card.c1::before { background:var(--brass); }
+.dash-card.c2::before { background:var(--green); }
+.dash-card.c3::before { background:var(--orange); }
+.dash-card.c4::before { background:var(--blue); }
+.dash-ttl { font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.6px; color:var(--muted); margin-bottom:12px;
+  display:flex; align-items:center; gap:5px; }
+.dash-card canvas { width:100% !important; }
+.dash-card-full { grid-column:1/-1; }
+.month-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.month-tbl th { padding:7px 10px; text-align:left; color:var(--brass3);
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px;
+  border-bottom:1px solid var(--bdr2); }
+.month-tbl td { padding:7px 10px; border-bottom:1px solid var(--bdr2); color:var(--txt2); }
+.month-tbl tr:last-child td { border-bottom:none; }
+.month-tbl tr:hover td { background:var(--surf2); }
+.mt-rv { color:var(--green); font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.mt-sd { color:var(--orange); font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.mt-tot { color:var(--brass2); font-weight:700; font-family:'IBM Plex Mono',monospace; }
+.top-org { display:flex; flex-direction:column; gap:7px; }
+.org-row { display:flex; align-items:center; gap:8px; }
+.org-name { font-size:12px; color:var(--txt2); width:130px; flex-shrink:0;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.org-bar-wrap { flex:1; height:8px; background:var(--bg2); border-radius:4px; overflow:hidden; }
+.org-bar { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--brass),var(--olive2)); transition:width .6s ease; }
+.org-cnt { font-size:11px; font-family:'IBM Plex Mono',monospace; color:var(--brass2); width:28px; text-align:right; flex-shrink:0; }
+.dash-empty { text-align:center; color:var(--muted); font-size:13px; padding:32px; }
+
 .hidden { display: none !important; }
 </style>
 </head>
@@ -482,18 +553,53 @@ select option { background: var(--surf); }
       📤 ส่ง <span class="tc" id="tc-s">0</span>
     </button>
     <div class="tab-spacer"></div>
+    <button class="tab" id="tab-d" onclick="switchTab('DASH')" style="color:var(--muted)">
+      📊 Dashboard
+    </button>
+    <div class="tab-spacer"></div>
     <button class="tbtn" onclick="loadData()" title="รีเฟรช">🔄</button>
     <button class="tbtn" onclick="window.print()" title="พิมพ์">🖨️</button>
+    <button class="tbtn" id="adv-tog" onclick="toggleAdv()" title="ค้นหาขั้นสูง">⚙️</button>
     <button class="add-btn r" id="add-btn" onclick="openAdd()">＋ ลงทะเบียนรับ</button>
   </div>
 
   <!-- Search -->
-  <div class="search-bar">
+  <div class="search-bar" id="search-bar-wrap">
     <div class="srch">
       <span class="srch-ico">🔍</span>
       <input type="text" id="srch" placeholder="ค้นหาเลขที่, เรื่อง, หน่วยงาน..." oninput="render()">
     </div>
     <input type="month" id="mf" onchange="render()">
+    <span class="filter-badge hidden" id="filter-badge">มีตัวกรอง</span>
+  </div>
+
+  <!-- Advanced Search Panel -->
+  <div class="adv-bar" id="adv-bar">
+    <div class="adv-grid">
+      <div class="adv-fld">
+        <label class="adv-lbl">วันที่ (จาก)</label>
+        <input type="date" id="af-from" onchange="render()">
+      </div>
+      <div class="adv-fld">
+        <label class="adv-lbl">วันที่ (ถึง)</label>
+        <input type="date" id="af-to" onchange="render()">
+      </div>
+      <div class="adv-fld">
+        <label class="adv-lbl">จาก (หน่วยงาน)</label>
+        <input type="text" id="af-org" placeholder="ชื่อหน่วยงาน" oninput="render()">
+      </div>
+      <div class="adv-fld">
+        <label class="adv-lbl">ไฟล์แนบ</label>
+        <select id="af-file" onchange="render()">
+          <option value="">ทั้งหมด</option>
+          <option value="yes">มีไฟล์แนบ</option>
+          <option value="no">ไม่มีไฟล์แนบ</option>
+        </select>
+      </div>
+    </div>
+    <div class="adv-act">
+      <button class="adv-clr" onclick="clearAdv()">✕ ล้างตัวกรอง</button>
+    </div>
   </div>
 
   <!-- Desktop table -->
@@ -518,6 +624,33 @@ select option { background: var(--surf); }
 
   <!-- Mobile cards -->
   <div class="card-list" id="cardlist"></div>
+
+  <!-- Dashboard -->
+  <div class="dash" id="dash-panel">
+    <div class="dash-row">
+      <div class="dash-card c1">
+        <div class="dash-ttl">📈 รับ-ส่ง รายเดือน (6 เดือนล่าสุด)</div>
+        <canvas id="ch-bar" height="180"></canvas>
+      </div>
+      <div class="dash-card c2">
+        <div class="dash-ttl">🥧 สัดส่วนรับ vs ส่ง</div>
+        <canvas id="ch-pie" height="180"></canvas>
+      </div>
+    </div>
+    <div class="dash-row">
+      <div class="dash-card c3">
+        <div class="dash-ttl">🏢 Top หน่วยงานที่ส่งมามากที่สุด</div>
+        <div class="top-org" id="top-org"></div>
+      </div>
+      <div class="dash-card c4">
+        <div class="dash-ttl">📅 สรุปรายเดือน (ปีปัจจุบัน)</div>
+        <table class="month-tbl">
+          <thead><tr><th>เดือน</th><th>รับ</th><th>ส่ง</th><th>รวม</th></tr></thead>
+          <tbody id="month-tbl-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /main -->
 
@@ -586,7 +719,7 @@ select option { background: var(--surf); }
       <div class="g2">
         <div class="fld">
           <label class="flbl">การปฏิบัติ</label>
-          <input type="text" id="f-op" placeholder="เช่น ฝ่ายอำนวยการ">
+          <input type="text" id="f-op" placeholder="เช่น เวียนทราบ">
         </div>
         <div class="fld">
           <label class="flbl">หมายเหตุ</label>
@@ -733,26 +866,67 @@ function updateStats() {
 function switchTab(t) {
   TAB = t;
   const isR = t === 'RECEIVE';
-  $('tab-r').className = 'tab r' + (isR?' active':'');
-  $('tab-s').className = 'tab s' + (!isR?' active':'');
-  const ab = $('add-btn');
-  ab.className = 'add-btn ' + (isR?'r':'s');
-  ab.textContent = '＋ ลงทะเบียน' + (isR?'รับ':'ส่ง');
-  render();
+  const isDash = t === 'DASH';
+  $('tab-r').className = 'tab r' + (t==='RECEIVE'?' active':'');
+  $('tab-s').className = 'tab s' + (t==='SEND'?' active':'');
+  $('tab-d').className = 'tab'   + (isDash?' active':'');
+  if (isDash) $('tab-d').style.color = isDash ? 'var(--brass2)' : 'var(--muted)';
+
+  // show/hide ledger vs dashboard
+  const ledger = [$('search-bar-wrap'), $('adv-bar'), document.querySelector('.tbl-wrap'), $('cardlist')];
+  ledger.forEach(el => { if(el) el.style.display = isDash ? 'none' : ''; });
+  $('dash-panel').className = isDash ? 'dash active' : 'dash';
+  $('add-btn').style.display = isDash ? 'none' : '';
+
+  if (!isDash) {
+    const ab = $('add-btn');
+    ab.className = 'add-btn ' + (isR?'r':'s');
+    ab.textContent = '＋ ลงทะเบียน' + (isR?'รับ':'ส่ง');
+    render();
+  } else {
+    renderDash();
+  }
 }
 
 /* ─── RENDER ─────────────────────────────────────────── */
+function toggleAdv() {
+  const bar = $('adv-bar');
+  bar.classList.toggle('open');
+}
+
+function clearAdv() {
+  ['af-from','af-to','af-org','af-file'].forEach(id => { $(id).value = ''; });
+  render();
+}
+
+function hasAdvFilter() {
+  return !!($('af-from').value || $('af-to').value || $('af-org').value || $('af-file').value);
+}
+
 function render() {
-  const q = $('srch').value.toLowerCase();
-  const m = $('mf').value;
+  if (TAB === 'DASH') { renderDash(); return; }
+  const q     = $('srch').value.toLowerCase();
+  const m     = $('mf').value;
+  const afrom = $('af-from').value;
+  const ato   = $('af-to').value;
+  const aorg  = $('af-org').value.toLowerCase();
+  const afile = $('af-file').value;
+
+  // show/hide filter badge
+  const hasFilt = hasAdvFilter();
+  $('filter-badge').classList.toggle('hidden', !hasFilt);
 
   const rows = ALL
     .filter(r => r.type === TAB)
     .filter(r => {
-      const ok_q = !q || [r.topic, r.bookNo, r.registerNo, r.from, r.to]
+      const ok_q    = !q     || [r.topic, r.bookNo, r.registerNo, r.from, r.to]
         .some(v => String(v||'').toLowerCase().includes(q));
-      const ok_m = !m || String(r.date||'').startsWith(m);
-      return ok_q && ok_m;
+      const ok_m    = !m     || String(r.date||'').startsWith(m);
+      const ok_from = !afrom || (r.date && r.date >= afrom);
+      const ok_to   = !ato   || (r.date && r.date <= ato);
+      const ok_org  = !aorg  || String(r.from||'').toLowerCase().includes(aorg);
+      const ok_file = !afile || (afile==='yes' ? !!r.fileUrl : !r.fileUrl);
+      return ok_q && ok_m && ok_from && ok_to && ok_org && ok_file;
     })
     .sort((a,b) => {
       const na = parseInt((a.registerNo||'').replace(/\D/g,'')||'0');
@@ -1080,6 +1254,124 @@ function toast(msg, type='') {
   const w=$('tw'), el=document.createElement('div');
   el.className='toast '+type; el.textContent=msg;
   w.appendChild(el); setTimeout(()=>el.remove(),3500);
+}
+
+/* ─── DASHBOARD ─────────────────────────────────────── */
+let _barChart = null;
+let _pieChart = null;
+
+function renderDash() {
+  if (!ALL.length) {
+    ['ch-bar','ch-pie'].forEach(id => {
+      const ctx = $(id); if(ctx) ctx.parentElement.innerHTML = '<div class="dash-empty">📭 ยังไม่มีข้อมูล</div>';
+    });
+    return;
+  }
+
+  // ── 6-month bar chart ──────────────────────────────────
+  const months6 = getLast6Months_();
+  const rvData  = months6.map(m => ALL.filter(r=>r.type==='RECEIVE'&&String(r.date||'').startsWith(m)).length);
+  const sdData  = months6.map(m => ALL.filter(r=>r.type==='SEND'   &&String(r.date||'').startsWith(m)).length);
+  const labels6 = months6.map(m => { const d=new Date(m+'-01'); return d.toLocaleDateString('th-TH',{month:'short',year:'2-digit'}); });
+
+  const barCtx = $('ch-bar');
+  if (barCtx) {
+    if (_barChart) _barChart.destroy();
+    _barChart = new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: labels6,
+        datasets: [
+          { label:'รับ', data:rvData, backgroundColor:'rgba(74,158,92,.75)', borderRadius:5 },
+          { label:'ส่ง', data:sdData, backgroundColor:'rgba(192,120,48,.75)', borderRadius:5 }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'#b8bc98', font:{size:11} } } },
+        scales:{
+          x:{ ticks:{color:'#7a8060',font:{size:10}}, grid:{color:'rgba(74,85,53,.3)'} },
+          y:{ ticks:{color:'#7a8060',font:{size:10},stepSize:1}, grid:{color:'rgba(74,85,53,.3)'}, beginAtZero:true }
+        }
+      }
+    });
+  }
+
+  // ── Pie chart rececive vs send ─────────────────────────
+  const rv = ALL.filter(r=>r.type==='RECEIVE').length;
+  const sd = ALL.filter(r=>r.type==='SEND').length;
+  const pieCtx = $('ch-pie');
+  if (pieCtx) {
+    if (_pieChart) _pieChart.destroy();
+    _pieChart = new Chart(pieCtx, {
+      type: 'doughnut',
+      data: {
+        labels:['รับ','ส่ง'],
+        datasets:[{ data:[rv,sd],
+          backgroundColor:['rgba(74,158,92,.8)','rgba(192,120,48,.8)'],
+          borderColor:['#1e3d28','#3d2810'], borderWidth:2 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ labels:{ color:'#b8bc98', font:{size:12} } },
+          tooltip:{ callbacks:{ label: ctx => ctx.label+': '+ctx.parsed+' ฉบับ' } }
+        },
+        cutout:'60%'
+      }
+    });
+  }
+
+  // ── Top orgs ───────────────────────────────────────────
+  const orgMap = {};
+  ALL.forEach(r => {
+    const org = r.from || 'ไม่ระบุ';
+    orgMap[org] = (orgMap[org]||0) + 1;
+  });
+  const topOrgs = Object.entries(orgMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxCnt  = topOrgs[0]?.[1] || 1;
+  const topEl   = $('top-org');
+  if (topEl) {
+    topEl.innerHTML = topOrgs.length
+      ? topOrgs.map(([name,cnt])=>`
+          <div class="org-row">
+            <span class="org-name" title="${esc(name)}">${esc(name)}</span>
+            <div class="org-bar-wrap"><div class="org-bar" style="width:${Math.round(cnt/maxCnt*100)}%"></div></div>
+            <span class="org-cnt">${cnt}</span>
+          </div>`).join('')
+      : '<div class="dash-empty">ไม่มีข้อมูล</div>';
+  }
+
+  // ── Monthly summary table (current year) ──────────────
+  const thisYear = new Date().getFullYear();
+  const thaiYear = thisYear + 543;
+  const MONTH_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const rows = MONTH_TH.map((mn,i) => {
+    const key = thisYear+'-'+(String(i+1).padStart(2,'0'));
+    const rv2 = ALL.filter(r=>r.type==='RECEIVE'&&String(r.date||'').startsWith(key)).length;
+    const sd2 = ALL.filter(r=>r.type==='SEND'   &&String(r.date||'').startsWith(key)).length;
+    return { mn, rv:rv2, sd:sd2 };
+  }).filter(r=>r.rv+r.sd>0);
+  const tbody = $('month-tbl-body');
+  if (tbody) {
+    tbody.innerHTML = rows.length
+      ? rows.map(r=>`<tr>
+          <td>${r.mn} ${thaiYear}</td>
+          <td class="mt-rv">${r.rv}</td>
+          <td class="mt-sd">${r.sd}</td>
+          <td class="mt-tot">${r.rv+r.sd}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" class="dash-empty">ยังไม่มีข้อมูลปีนี้</td></tr>';
+  }
+}
+
+function getLast6Months_() {
+  const res = []; const d = new Date();
+  for (let i=5; i>=0; i--) {
+    const t = new Date(d.getFullYear(), d.getMonth()-i, 1);
+    res.push(t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0'));
+  }
+  return res;
 }
 
 /* ─── START ──────────────────────────────────────────── */
