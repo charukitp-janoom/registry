@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ทะเบียนรับ-ส่ง | กองพันทหารปืนใหญ่ที่ 5</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Serif+Thai:wght@700;900&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════════════
+   MILITARY LEDGER — Olive Drab + Aged Brass
+   Mobile-first, works in LINE LIFF & desktop browser
+   ══════════════════════════════════════════════════════ */
+:root {
+  --bg:      #1a1f14;
+  --bg2:     #222819;
+  --bg3:     #2a3120;
+  --surf:    #2e361f;
+  --surf2:   #343d24;
+  --surf3:   #3a4229;
+  --bdr:     #4a5535;
+  --bdr2:    #3d4a2c;
+  --brass:   #c8a84b;
+  --brass2:  #dfc078;
+  --brass3:  #f0dca0;
+  --olive:   #6b7c3a;
+  --olive2:  #8a9e4a;
+  --txt:     #e8ead8;
+  --txt2:    #b8bc98;
+  --muted:   #7a8060;
+  --green:   #4a9e5c;
+  --green-lt:#1e3d28;
+  --orange:  #c07830;
+  --orange-lt:#3d2810;
+  --red:     #c04040;
+  --blue:    #4a7aaa;
+  --blue-lt: #1a2d40;
+  --shadow:  0 2px 12px rgba(0,0,0,.4);
+  --shadow2: 0 8px 32px rgba(0,0,0,.55);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { font-size:15px; }
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Loading Overlay ── */
+.ov-load {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; z-index: 9999;
+}
+.ov-load.gone { display: none; }
+.load-emblem {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--brass), var(--brass2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; box-shadow: 0 4px 20px rgba(200,168,75,.35);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+.load-txt { font-size: 14px; color: var(--muted); letter-spacing: .5px; }
+
+/* ── Page Header ── */
+.hdr {
+  background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+  border-bottom: 1px solid var(--bdr);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.hdr-ico {
+  width: 44px; height: 44px; border-radius: 11px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--brass), var(--brass2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; box-shadow: 0 3px 12px rgba(200,168,75,.3);
+}
+.hdr-ttl {
+  font-family: 'Noto Serif Thai', serif;
+  font-size: 15px; font-weight: 900; color: var(--brass2);
+  line-height: 1.2;
+}
+.hdr-sub { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: .3px; }
+.hdr-user {
+  margin-left: auto; text-align: right; flex-shrink: 0;
+}
+.hdr-name { font-size: 11px; font-weight: 700; color: var(--txt2); }
+.hdr-role {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; display: inline-block;
+}
+.hdr-role.ADMIN { background: rgba(200,168,75,.2); color: var(--brass2); border: 1px solid rgba(200,168,75,.3); }
+.hdr-role.STAFF { background: rgba(74,158,92,.2); color: #7ed898; border: 1px solid rgba(74,158,92,.25); }
+.hdr-role.VIEWER{ background: rgba(122,128,96,.2); color: var(--muted); border: 1px solid var(--bdr); }
+
+/* ── Main ── */
+.main { padding: 0 0 80px; max-width: 1280px; margin: 0 auto; }
+
+/* ── Stats strip ── */
+.stats {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 0; border-bottom: 1px solid var(--bdr);
+  background: var(--bg2);
+}
+.stat {
+  padding: 12px 10px; text-align: center;
+  border-right: 1px solid var(--bdr);
+  position: relative; overflow: hidden;
+}
+.stat:last-child { border-right: none; }
+.stat::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+}
+.stat.tot::after  { background: var(--brass); }
+.stat.recv::after { background: var(--green); }
+.stat.send::after { background: var(--orange); }
+.stat.month::after { background: var(--olive2); }
+.stat-n {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px; font-weight: 600; line-height: 1;
+}
+.stat-n.g { color: var(--green); }
+.stat-n.o { color: var(--orange); }
+.stat-n.b { color: var(--brass); }
+.stat-lbl { font-size: 9.5px; color: var(--muted); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+
+/* ── Tab bar ── */
+.tabbar {
+  display: flex; background: var(--bg2);
+  border-bottom: 1px solid var(--bdr);
+  padding: 8px 12px; gap: 6px; align-items: center;
+  flex-wrap: wrap;
+}
+.tab {
+  padding: 8px 18px; border-radius: 10px; border: 1px solid var(--bdr);
+  font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .18s; display: flex; align-items: center; gap: 6px;
+  background: transparent; color: var(--muted);
+}
+.tab.active.r { background: var(--green-lt); color: #7ed898; border-color: rgba(74,158,92,.35); }
+.tab.active.s { background: var(--orange-lt); color: #f0a060; border-color: rgba(192,120,48,.35); }
+.tab:not(.active):hover { background: var(--surf); color: var(--txt2); }
+.tc { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px; background: rgba(255,255,255,.07); }
+.tab-spacer { flex: 1; }
+
+/* toolbar buttons */
+.tbtn {
+  width: 34px; height: 34px; border: 1px solid var(--bdr);
+  background: var(--surf); border-radius: 9px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: all .15s; color: var(--txt2);
+}
+.tbtn:hover { background: var(--surf2); border-color: var(--brass); }
+
+.add-btn {
+  padding: 8px 16px; border: none; border-radius: 10px;
+  font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .17s; flex-shrink: 0;
+}
+.add-btn.r { background: var(--green); color: #000; }
+.add-btn.r:hover { background: #5ab86c; }
+.add-btn.s { background: var(--orange); color: #000; }
+.add-btn.s:hover { background: #d48840; }
+.add-btn:active { transform: scale(.97); }
+
+/* search */
+.search-bar {
+  display: flex; gap: 8px; padding: 10px 12px;
+  background: var(--bg2); border-bottom: 1px solid var(--bdr);
+  align-items: center; flex-wrap: wrap;
+}
+.srch { position: relative; flex: 1; min-width: 160px; }
+.srch input {
+  width: 100%; padding: 8px 10px 8px 32px;
+  background: var(--surf); border: 1px solid var(--bdr2);
+  border-radius: 9px; font-family: 'Sarabun', sans-serif; font-size: 13px;
+  color: var(--txt); outline: none; transition: border-color .18s;
+}
+.srch input:focus { border-color: var(--brass); }
+.srch input::placeholder { color: var(--muted); }
+.srch-ico { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+input[type=month] {
+  padding: 8px 10px; background: var(--surf); border: 1px solid var(--bdr2);
+  border-radius: 9px; font-size: 13px; color: var(--txt); outline: none;
+  font-family: inherit; transition: border-color .18s;
+}
+input[type=month]:focus { border-color: var(--brass); }
+
+/* ── Desktop Table ── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--surf3); }
+thead th {
+  padding: 10px 11px; text-align: left;
+  font-family: 'Noto Serif Thai', serif;
+  font-size: 11px; font-weight: 700; color: var(--brass3);
+  letter-spacing: .3px; white-space: nowrap;
+  border-right: 1px solid var(--bdr2);
+}
+thead th:last-child { border-right: none; }
+thead th.ctr { text-align: center; }
+tbody tr { border-bottom: 1px solid var(--bdr2); transition: background .12s; cursor: pointer; }
+tbody tr:hover { background: var(--surf); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 9px 11px; border-right: 1px solid var(--bdr2); vertical-align: middle; }
+td:last-child { border-right: none; }
+.td-reg { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 600; text-align: center; color: var(--brass2); }
+.td-book { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--txt2); max-width: 110px; word-break: break-word; line-height: 1.4; }
+.td-date { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.td-org { font-size: 12px; max-width: 115px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--txt2); }
+.td-topic strong { display: block; font-size: 13px; font-weight: 600; color: var(--txt); }
+.td-topic a { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--brass); text-decoration: none; margin-top: 2px; }
+.td-topic a:hover { text-decoration: underline; }
+.td-rec { font-size: 11px; text-align: center; color: var(--muted); font-weight: 600; }
+.td-rem { font-size: 11px; color: var(--muted); max-width: 80px; }
+.td-act { text-align: center; white-space: nowrap; }
+.abtn {
+  width: 26px; height: 26px; border: none; background: transparent;
+  border-radius: 6px; cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 13px; transition: all .13s;
+}
+.abtn.v:hover { background: var(--surf3); }
+.abtn.e:hover { background: var(--blue-lt); }
+.abtn.d:hover { background: rgba(192,64,64,.2); }
+.empty-r td { padding: 44px; text-align: center; color: var(--muted); font-size: 13px; }
+.load-r td { padding: 36px; text-align: center; color: var(--muted); }
+.spin { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--bdr); border-top-color: var(--brass); border-radius: 50%; animation: sp .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ── Mobile Card View (shown on narrow screens) ── */
+.card-list { display: none; padding: 8px; gap: 8px; flex-direction: column; }
+.rec-card {
+  background: var(--surf); border: 1px solid var(--bdr2);
+  border-radius: 13px; padding: 13px 14px; cursor: pointer;
+  transition: all .15s; animation: fi .2s ease;
+  position: relative; overflow: hidden;
+}
+.rec-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+}
+.rec-card.recv::before { background: var(--green); }
+.rec-card.send::before { background: var(--orange); }
+.rec-card:active { transform: scale(.99); background: var(--surf2); }
+.rc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.rc-reg {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px; font-weight: 600; color: var(--brass2); line-height: 1;
+}
+.rc-type { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.rc-type.recv { background: var(--green-lt); color: #7ed898; }
+.rc-type.send { background: var(--orange-lt); color: #f0a060; }
+.rc-topic { font-size: 14px; font-weight: 600; color: var(--txt); line-height: 1.4; margin-bottom: 7px; }
+.rc-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-m { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+.rc-book { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--txt2); }
+.rc-attach { font-size: 10px; color: var(--brass); display: flex; align-items: center; gap: 3px; }
+
+/* ── Modal backdrop ── */
+.mbd { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: flex-end; justify-content: center; padding: 0; animation: fi .18s ease; }
+.mbd.hidden { display: none; }
+.mbd.center { align-items: center; padding: 16px; }
+@keyframes fi { from{opacity:0} to{opacity:1} }
+
+/* ── Form Modal (bottom sheet on mobile, centered on desktop) ── */
+.mfrm {
+  background: var(--bg2); border-radius: 20px 20px 0 0;
+  width: 100%; max-height: 95vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.6);
+  animation: su .22s ease;
+  border-top: 1px solid var(--bdr);
+}
+@media(min-width:640px) {
+  .mbd { align-items: center; padding: 16px; }
+  .mfrm { border-radius: 20px; max-width: 560px; max-height: 90vh; border: 1px solid var(--bdr); }
+}
+@keyframes su { from{transform:translateY(20px);opacity:0} to{transform:none;opacity:1} }
+
+.mfrm-drag { width: 36px; height: 4px; border-radius: 2px; background: var(--bdr); margin: 10px auto 0; flex-shrink: 0; }
+@media(min-width:640px) { .mfrm-drag { display: none; } }
+
+.mfrm-hd {
+  padding: 14px 18px 12px; border-bottom: 1px solid var(--bdr2);
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-shrink: 0;
+}
+.mfrm-ttl {
+  font-family: 'Noto Serif Thai', serif;
+  font-size: 15px; font-weight: 900;
+  display: flex; align-items: center; gap: 7px;
+}
+.mfrm-ttl.r { color: #7ed898; }
+.mfrm-ttl.s { color: #f0a060; }
+.mfrm-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.xbtn { width: 28px; height: 28px; border: none; background: var(--surf); border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--muted); transition: all .14s; flex-shrink: 0; }
+.xbtn:hover { background: rgba(192,64,64,.2); color: var(--red); }
+
+.mfrm-body { padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.mfrm-ft { padding: 12px 18px; border-top: 1px solid var(--bdr2); flex-shrink: 0; background: var(--bg2); }
+
+/* AI scan */
+.ai-box { background: linear-gradient(135deg, rgba(26,45,64,.8), rgba(26,61,40,.8)); border: 1px solid rgba(74,122,170,.3); border-radius: 12px; padding: 12px 14px; }
+.ai-lbl { font-size: 10px; font-weight: 700; color: #7ab8f0; text-transform: uppercase; letter-spacing: .6px; display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+.ai-btn { width: 100%; padding: 10px; border: 1px solid rgba(74,122,170,.35); background: rgba(74,122,170,.1); border-radius: 9px; font-family: 'Sarabun', sans-serif; font-size: 13px; font-weight: 700; color: #7ab8f0; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: all .17s; }
+.ai-btn:hover { background: rgba(74,122,170,.2); }
+.ai-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* fields */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width: 380px) { .g2 { grid-template-columns: 1fr; } }
+.fld { display: flex; flex-direction: column; gap: 5px; }
+.flbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.flbl .req { color: var(--red); margin-left: 2px; }
+input[type=text], input[type=date], textarea, select {
+  padding: 10px 12px; background: var(--surf); border: 1px solid var(--bdr2);
+  border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 14px;
+  color: var(--txt); outline: none; transition: border-color .17s; width: 100%;
+}
+input[type=text]:focus, input[type=date]:focus, textarea:focus, select:focus { border-color: var(--brass); }
+input[type=text]::placeholder, textarea::placeholder { color: var(--muted); }
+input.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+textarea { resize: vertical; min-height: 58px; }
+select option { background: var(--surf); }
+.frow { display: flex; gap: 6px; align-items: flex-end; }
+.frow input { flex: 1; }
+.smb { padding: 10px 12px; border: 1px solid var(--bdr2); background: var(--surf2); border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 12px; font-weight: 700; color: var(--txt2); cursor: pointer; white-space: nowrap; transition: all .14s; }
+.smb:hover { background: var(--surf3); border-color: var(--brass); }
+.smb:disabled { opacity: .45; cursor: not-allowed; }
+
+/* save button */
+.savbtn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-family: 'Noto Serif Thai', serif; font-size: 15px; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .17s; }
+.savbtn.r { background: var(--green); color: #000; box-shadow: 0 4px 16px rgba(74,158,92,.3); }
+.savbtn.r:hover { background: #5ab86c; }
+.savbtn.s { background: var(--orange); color: #000; box-shadow: 0 4px 16px rgba(192,120,48,.3); }
+.savbtn.s:hover { background: #d48840; }
+.savbtn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+.savbtn:active { transform: scale(.98); }
+
+/* ── Detail Modal ── */
+.mdet {
+  background: var(--bg2); border-radius: 20px;
+  width: 100%; max-width: 960px; max-height: 88vh;
+  display: flex; overflow: hidden;
+  box-shadow: var(--shadow2); animation: su .2s ease;
+  position: relative;
+}
+@media(max-width: 640px) {
+  .mdet { flex-direction: column; max-height: 92vh; border-radius: 16px 16px 0 0; }
+  .mbd.center { align-items: flex-end; padding: 0; }
+}
+.mdet-l { width: 44%; display: flex; flex-direction: column; border-right: 1px solid var(--bdr2); }
+@media(max-width:640px) { .mdet-l { width: 100%; max-height: 55vh; } }
+.mdet-lhd { padding: 18px 20px; border-bottom: 1px solid var(--bdr2); flex-shrink: 0; }
+.dtype { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .4px; }
+.dtype.r { background: var(--green-lt); color: #7ed898; }
+.dtype.s { background: var(--orange-lt); color: #f0a060; }
+.dtopic { font-family: 'Noto Serif Thai', serif; font-size: 17px; font-weight: 700; color: var(--txt); line-height: 1.45; padding-right: 32px; }
+.dbook { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 8px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.dbook .pill { background: var(--surf); border: 1px solid var(--bdr2); border-radius: 5px; padding: 2px 7px; }
+.mdet-lb { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.det-blk { background: var(--surf); border: 1px solid var(--bdr2); border-radius: 12px; padding: 13px; }
+.det-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.di .dl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 2px; }
+.di .dv { font-size: 14px; font-weight: 600; color: var(--txt); }
+.di .dv.mono { font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+.dhr { height: 1px; background: var(--bdr2); margin: 6px 0; }
+.det-ftrow .dl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 3px; }
+.det-ftval { background: var(--bg2); border: 1px solid var(--bdr2); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--txt2); }
+.det-rec { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bdr2); }
+.rec-b { font-size: 11px; font-weight: 700; background: var(--blue-lt); color: #7ab8f0; padding: 3px 10px; border-radius: 20px; }
+
+.qr-sec { background: var(--surf); border: 1px solid var(--bdr2); border-radius: 12px; padding: 13px; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; overflow: hidden; }
+.qr-sec::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--brass), var(--olive2), var(--brass)); }
+.qr-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.qr-img { background: white; padding: 7px; border-radius: 9px; }
+.qr-img img { width: 110px; height: 110px; display: block; }
+.qr-url { display: flex; align-items: center; gap: 5px; width: 100%; max-width: 280px; }
+.qr-url input { flex: 1; padding: 6px 9px; border: 1px solid var(--bdr2); border-radius: 7px; font-size: 11px; color: var(--muted); background: var(--bg); outline: none; }
+.cpybtn { width: 28px; height: 28px; border: 1px solid var(--bdr2); background: var(--surf2); border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all .13s; }
+.cpybtn:hover { background: var(--surf3); border-color: var(--brass); }
+.det-note { border-left: 3px solid; border-radius: 0 8px 8px 0; padding: 9px 12px; font-size: 13px; line-height: 1.7; color: var(--txt2); }
+.det-note.op { border-color: var(--blue); background: var(--blue-lt); }
+.det-note.rm { border-color: var(--brass); background: rgba(200,168,75,.07); }
+
+.mdet-r { width: 56%; display: flex; flex-direction: column; background: var(--bg); }
+@media(max-width:640px) { .mdet-r { width: 100%; flex: 1; } }
+.mdet-rhd { padding: 11px 15px; border-bottom: 1px solid var(--bdr2); background: var(--bg2); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.mdet-rhd h4 { font-size: 12px; font-weight: 600; color: var(--txt2); display: flex; align-items: center; gap: 5px; }
+.open-lnk { font-size: 11px; color: var(--brass); text-decoration: none; display: flex; align-items: center; gap: 3px; }
+.open-lnk:hover { text-decoration: underline; }
+.prev-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; overflow: hidden; }
+.prev-area iframe { width: 100%; height: 100%; border-radius: 9px; border: 1px solid var(--bdr); background: white; }
+.prev-ph { text-align: center; color: var(--muted); }
+.prev-ph .phi { font-size: 40px; opacity: .2; margin-bottom: 8px; }
+.prev-ph p { font-size: 12px; font-weight: 600; }
+.prev-ph a { display: inline-block; margin-top: 10px; padding: 7px 14px; background: var(--surf2); color: var(--txt2); border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none; border: 1px solid var(--bdr); transition: all .14s; }
+.prev-ph a:hover { background: var(--surf3); border-color: var(--brass); }
+.det-xbtn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border: 1px solid var(--bdr); background: var(--surf); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); z-index: 10; transition: all .13s; }
+.det-xbtn:hover { background: rgba(192,64,64,.2); color: var(--red); border-color: var(--red); }
+
+/* ── Toast ── */
+.tw { position: fixed; bottom: 20px; right: 16px; z-index: 9999; display: flex; flex-direction: column-reverse; gap: 7px; }
+.toast { background: var(--surf3); color: var(--txt); padding: 10px 15px; border-radius: 9px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow2); animation: fi .2s ease; display: flex; align-items: center; gap: 7px; border-left: 3px solid var(--brass); max-width: 280px; }
+.toast.ok  { border-color: var(--green); }
+.toast.err { border-color: var(--red); }
+.toast.info{ border-color: var(--blue); }
+
+/* ── Responsive table/cards ── */
+@media(max-width: 700px) {
+  .tbl-wrap { display: none; }
+  .card-list { display: flex; }
+}
+@media(min-width: 701px) {
+  .card-list { display: none; }
+}
+
+/* ── Print ── */
+@media print {
+  .hdr, .stats, .tabbar, .search-bar, .mbd, .tw, .td-act { display: none !important; }
+  body { background: white; color: black; }
+  .main { padding: 0; }
+  .tbl-wrap { display: block !important; }
+  table { font-size: 11px; }
+  thead tr { background: #e0e0e0; }
+  thead th { color: black; }
+  tbody tr:hover { background: white !important; }
+  td { border-color: #ccc; }
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="ov-load" id="ov-load">
+  <div class="load-emblem">📜</div>
+  <div class="load-txt" id="load-txt">กำลังเชื่อมต่อ...</div>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-ico">📜</div>
+  <div>
+    <div class="hdr-ttl">ทะเบียนหนังสือราชการ</div>
+    <div class="hdr-sub">กองพันทหารปืนใหญ่ที่ 5</div>
+  </div>
+  <div class="hdr-user">
+    <div class="hdr-name" id="hdr-name">—</div>
+    <span class="hdr-role STAFF" id="hdr-role">STAFF</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat tot"><div class="stat-n" id="s-tot">—</div><div class="stat-lbl">ทั้งหมด</div></div>
+    <div class="stat recv"><div class="stat-n g" id="s-rv">—</div><div class="stat-lbl">รับ</div></div>
+    <div class="stat send"><div class="stat-n o" id="s-sd">—</div><div class="stat-lbl">ส่ง</div></div>
+    <div class="stat month"><div class="stat-n b" id="s-mo">—</div><div class="stat-lbl">เดือนนี้</div></div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tabbar">
+    <button class="tab r active" id="tab-r" onclick="switchTab('RECEIVE')">
+      📥 รับ <span class="tc" id="tc-r">0</span>
+    </button>
+    <button class="tab s" id="tab-s" onclick="switchTab('SEND')">
+      📤 ส่ง <span class="tc" id="tc-s">0</span>
+    </button>
+    <div class="tab-spacer"></div>
+    <button class="tbtn" onclick="loadData()" title="รีเฟรช">🔄</button>
+    <button class="tbtn" onclick="window.print()" title="พิมพ์">🖨️</button>
+    <button class="add-btn r" id="add-btn" onclick="openAdd()">＋ ลงทะเบียนรับ</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <div class="srch">
+      <span class="srch-ico">🔍</span>
+      <input type="text" id="srch" placeholder="ค้นหาเลขที่, เรื่อง, หน่วยงาน..." oninput="render()">
+    </div>
+    <input type="month" id="mf" onchange="render()">
+  </div>
+
+  <!-- Desktop table -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="ctr" style="width:62px">ทะเบียน</th>
+          <th style="width:110px">ที่</th>
+          <th style="width:86px">วันที่</th>
+          <th style="width:115px">จาก</th>
+          <th style="width:115px">ถึง</th>
+          <th>เรื่อง</th>
+          <th class="ctr" style="width:82px">ผู้บันทึก</th>
+          <th style="width:72px">หมายเหตุ</th>
+          <th class="ctr" style="width:82px">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="card-list" id="cardlist"></div>
+
+</div><!-- /main -->
+
+<!-- Form modal -->
+<div class="mbd hidden" id="mbd-frm" onclick="closeFrmBd(event)">
+  <div class="mfrm" id="mfrm">
+    <div class="mfrm-drag"></div>
+    <div class="mfrm-hd">
+      <div>
+        <div class="mfrm-ttl r" id="f-ttl">➕ ลงทะเบียนรับ</div>
+        <div class="mfrm-sub" id="f-sub">กรอกข้อมูลหนังสือราชการ (ทบ.๑๐๑)</div>
+      </div>
+      <button class="xbtn" onclick="closeFrm()">✕</button>
+    </div>
+    <div class="mfrm-body">
+
+      <!-- AI Scan -->
+      <div class="ai-box" id="ai-box">
+        <div class="ai-lbl">✨ Claude AI Smart Scan</div>
+        <button class="ai-btn" id="ai-btn" type="button" onclick="document.getElementById('fi-scan').click()">
+          <span id="ai-txt">📷 ถ่ายภาพหนังสือ — AI อ่านข้อมูลให้อัตโนมัติ</span>
+        </button>
+        <input type="file" id="fi-scan" accept="image/*" style="display:none" onchange="handleScan(event)">
+      </div>
+
+      <!-- เลขทะเบียน + วันที่ -->
+      <div class="g2">
+        <div class="fld">
+          <label class="flbl">เลขทะเบียน<span class="req">*</span></label>
+          <div class="frow">
+            <input type="text" id="f-reg" class="mono" placeholder="001" required>
+            <button class="smb" type="button" onclick="autoNo()">⌗</button>
+          </div>
+        </div>
+        <div class="fld">
+          <label class="flbl">ลงวันที่<span class="req">*</span></label>
+          <input type="date" id="f-date" required>
+        </div>
+      </div>
+
+      <!-- เลขที่หนังสือ -->
+      <div class="fld">
+        <label class="flbl">ที่ (เลขที่หนังสือ)</label>
+        <input type="text" id="f-book" class="mono" placeholder="กห ๑๒๓๔/๒๕๖๘">
+      </div>
+
+      <!-- จาก / ถึง -->
+      <div class="g2">
+        <div class="fld">
+          <label class="flbl">จาก (From)</label>
+          <input type="text" id="f-from" placeholder="หน่วยงานต้นทาง">
+        </div>
+        <div class="fld">
+          <label class="flbl">ถึง / ผู้รับ</label>
+          <input type="text" id="f-to" placeholder="ผู้รับ">
+        </div>
+      </div>
+
+      <!-- เรื่อง -->
+      <div class="fld">
+        <label class="flbl">เรื่อง<span class="req">*</span></label>
+        <textarea id="f-topic" placeholder="เรื่องของหนังสือ..." required></textarea>
+      </div>
+
+      <!-- การปฏิบัติ + หมายเหตุ -->
+      <div class="g2">
+        <div class="fld">
+          <label class="flbl">การปฏิบัติ</label>
+          <input type="text" id="f-op" placeholder="เช่น เวียนทราบ">
+        </div>
+        <div class="fld">
+          <label class="flbl">หมายเหตุ</label>
+          <input type="text" id="f-rem">
+        </div>
+      </div>
+
+      <!-- ผู้บันทึก -->
+      <div class="fld">
+        <label class="flbl">ผู้บันทึก/รับ</label>
+        <input type="text" id="f-rec">
+      </div>
+
+      <!-- เอกสารแนบ -->
+      <div class="fld">
+        <label class="flbl">เอกสารแนบ (URL หรืออัปโหลด)</label>
+        <div class="frow">
+          <input type="text" id="f-url" placeholder="https://drive.google.com/...">
+          <button class="smb" type="button" id="up-btn" onclick="document.getElementById('fi-up').click()">📎</button>
+          <input type="file" id="fi-up" style="display:none" onchange="handleUpload(event)">
+        </div>
+      </div>
+
+    </div>
+    <div class="mfrm-ft">
+      <button class="savbtn r" id="savbtn" type="button" onclick="saveRec()">💾 บันทึกข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="mbd center hidden" id="mbd-det" onclick="closeDetBd(event)">
+  <div class="mdet">
+    <button class="det-xbtn" onclick="closeDet()">✕</button>
+
+    <!-- Left panel -->
+    <div class="mdet-l">
+      <div class="mdet-lhd">
+        <div class="dtype r" id="d-type">📥 ทะเบียนรับ</div>
+        <div class="dtopic" id="d-topic">—</div>
+        <div class="dbook">
+          <span>ที่</span><span class="pill" id="d-book">—</span>
+          <span id="d-date">—</span>
+        </div>
+      </div>
+      <div class="mdet-lb" id="d-body"></div>
+    </div>
+
+    <!-- Right preview -->
+    <div class="mdet-r">
+      <div class="mdet-rhd">
+        <h4>👁 ตัวอย่างเอกสาร</h4>
+        <a class="open-lnk hidden" id="d-link" href="#" target="_blank">เปิดใหม่ ↗</a>
+      </div>
+      <div class="prev-area" id="d-prev">
+        <div class="prev-ph"><div class="phi">📄</div><p>ไม่มีไฟล์แนบ</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="tw" id="tw"></div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+/* ─── CONFIG ───────────────────────────────────────── */
+const LIFF_ID        = '2009243376-Hd3IygRL';  // ← ใช้ LIFF เดิม (หรือสร้างใหม่)
+const GAS_URL        = 'YOUR_GAS_WEB_APP_URL_HERE'; // ← ใส่ URL ของ GAS Web App
+const CLAUDE_KEY     = '';   // ← ใส่ Claude API Key สำหรับ AI Scan (ปล่อยว่างได้)
+const UNIT           = 'กองพันทหารปืนใหญ่ที่ 5';
+
+/* ─── STATE ─────────────────────────────────────────── */
+let ALL      = [];
+let TAB      = 'RECEIVE';
+let EDIT_ID  = null;
+let CUR_USER = { name: 'เจ้าหน้าที่', role: 'STAFF' };
+let IS_LIFF  = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ─── INIT ──────────────────────────────────────────── */
+async function init() {
+  setLoadTxt('กำลังเชื่อมต่อ...');
+
+  // ลอง init LIFF
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    IS_LIFF = liff.isInClient();
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const profile = await liff.getProfile();
+    CUR_USER.name = profile.displayName;
+    CUR_USER.role = 'STAFF'; // role จาก LINE — ปรับได้ตามระบบ Auth
+  } catch (e) {
+    // ไม่ได้ใช้ LIFF — ทำงานเป็น web ปกติ
+    IS_LIFF = false;
+  }
+
+  $('hdr-name').textContent = CUR_USER.name;
+  $('hdr-role').textContent = CUR_USER.role;
+  $('hdr-role').className   = 'hdr-role ' + CUR_USER.role;
+  $('f-rec').value = CUR_USER.name;
+  $('f-date').value = new Date().toISOString().split('T')[0];
+  if (!CLAUDE_KEY) $('ai-box').style.display = 'none';
+
+  await loadData();
+  hideLoad();
+}
+
+function setLoadTxt(t) { $('load-txt').textContent = t; }
+function hideLoad()     { $('ov-load').classList.add('gone'); }
+
+/* ─── DATA ──────────────────────────────────────────── */
+async function loadData() {
+  showTableLoad();
+  try {
+    const r = await fetch(GAS_URL + '?action=getAll');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    ALL = Array.isArray(d) ? d : [];
+  } catch (e) {
+    ALL = [];
+    toast('โหลดข้อมูลไม่สำเร็จ — ตรวจสอบ GAS_URL', 'err');
+  }
+  updateStats();
+  render();
+}
+
+/* ─── STATS ─────────────────────────────────────────── */
+function updateStats() {
+  const thisM = new Date().toISOString().slice(0,7);
+  $('s-tot').textContent = ALL.length;
+  $('s-rv').textContent  = ALL.filter(r=>r.type==='RECEIVE').length;
+  $('s-sd').textContent  = ALL.filter(r=>r.type==='SEND').length;
+  $('s-mo').textContent  = ALL.filter(r=>(r.date||'').startsWith(thisM)).length;
+  $('tc-r').textContent  = ALL.filter(r=>r.type==='RECEIVE').length;
+  $('tc-s').textContent  = ALL.filter(r=>r.type==='SEND').length;
+}
+
+/* ─── TAB ───────────────────────────────────────────── */
+function switchTab(t) {
+  TAB = t;
+  const isR = t === 'RECEIVE';
+  $('tab-r').className = 'tab r' + (isR?' active':'');
+  $('tab-s').className = 'tab s' + (!isR?' active':'');
+  const ab = $('add-btn');
+  ab.className = 'add-btn ' + (isR?'r':'s');
+  ab.textContent = '＋ ลงทะเบียน' + (isR?'รับ':'ส่ง');
+  render();
+}
+
+/* ─── RENDER ─────────────────────────────────────────── */
+function render() {
+  const q = $('srch').value.toLowerCase();
+  const m = $('mf').value;
+
+  const rows = ALL
+    .filter(r => r.type === TAB)
+    .filter(r => {
+      const ok_q = !q || [r.topic, r.bookNo, r.registerNo, r.from, r.to]
+        .some(v => String(v||'').toLowerCase().includes(q));
+      const ok_m = !m || String(r.date||'').startsWith(m);
+      return ok_q && ok_m;
+    })
+    .sort((a,b) => {
+      const na = parseInt((a.registerNo||'').replace(/\D/g,'')||'0');
+      const nb = parseInt((b.registerNo||'').replace(/\D/g,'')||'0');
+      return nb !== na ? nb - na : new Date(b.date) - new Date(a.date);
+    });
+
+  renderTable(rows);
+  renderCards(rows);
+}
+
+function showTableLoad() {
+  $('tbody').innerHTML = `<tr class="load-r"><td colspan="9"><span class="spin"></span>กำลังโหลด...</td></tr>`;
+  $('cardlist').innerHTML = `<div style="padding:32px;text-align:center;color:var(--muted)"><span class="spin"></span>กำลังโหลด...</div>`;
+}
+
+function renderTable(rows) {
+  if (!rows.length) {
+    $('tbody').innerHTML = `<tr class="empty-r"><td colspan="9">📭 ไม่พบรายการ</td></tr>`;
+    return;
+  }
+  const canEdit = CUR_USER.role !== 'VIEWER';
+  $('tbody').innerHTML = rows.map(r => `
+    <tr onclick="openDet('${esc(r.id)}')">
+      <td class="td-reg">${esc(r.registerNo)}</td>
+      <td class="td-book">${esc(r.bookNo)}</td>
+      <td class="td-date">${fmtDate(r.date)}</td>
+      <td class="td-org" title="${esc(r.from)}">${esc(r.from)}</td>
+      <td class="td-org" title="${esc(r.to)}">${esc(r.to)}</td>
+      <td class="td-topic">
+        <strong>${esc(r.topic)}</strong>
+        ${r.fileUrl?`<a href="${esc(r.fileUrl)}" target="_blank" onclick="event.stopPropagation()">📎 ไฟล์แนบ</a>`:''}
+      </td>
+      <td class="td-rec">${esc(r.recorder||'—')}</td>
+      <td class="td-rem">${esc(r.remark||'')}</td>
+      <td class="td-act" onclick="event.stopPropagation()">
+        <button class="abtn v" onclick="openDet('${esc(r.id)}')" title="ดู">👁</button>
+        ${canEdit?`<button class="abtn e" onclick="openEdit('${esc(r.id)}')" title="แก้ไข">✏️</button>
+        <button class="abtn d" onclick="delRec('${esc(r.id)}')" title="ลบ">🗑️</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+function renderCards(rows) {
+  if (!rows.length) {
+    $('cardlist').innerHTML = `<div style="padding:32px;text-align:center;color:var(--muted)">📭 ไม่พบรายการ</div>`;
+    return;
+  }
+  $('cardlist').innerHTML = rows.map(r => `
+    <div class="rec-card ${r.type==='RECEIVE'?'recv':'send'}" onclick="openDet('${esc(r.id)}')">
+      <div class="rc-top">
+        <div class="rc-reg">${esc(r.registerNo)}</div>
+        <span class="rc-type ${r.type==='RECEIVE'?'recv':'send'}">${r.type==='RECEIVE'?'รับ':'ส่ง'}</span>
+      </div>
+      <div class="rc-topic">${esc(r.topic)}</div>
+      <div class="rc-meta">
+        <span class="rc-m">📅 ${fmtDate(r.date)}</span>
+        ${r.bookNo?`<span class="rc-book">${esc(r.bookNo)}</span>`:''}
+        <span class="rc-m">👤 ${esc(r.recorder||'—')}</span>
+        ${r.fileUrl?'<span class="rc-attach">📎 ไฟล์แนบ</span>':''}
+      </div>
+    </div>`).join('');
+}
+
+/* ─── FORM MODAL ─────────────────────────────────────── */
+function openAdd() {
+  EDIT_ID = null;
+  const isR = TAB === 'RECEIVE';
+  $('f-reg').value   = getNextNo();
+  $('f-date').value  = new Date().toISOString().split('T')[0];
+  $('f-book').value  = '';
+  $('f-from').value  = isR ? '' : UNIT;
+  $('f-to').value    = isR ? UNIT : '';
+  $('f-topic').value = '';
+  $('f-op').value    = '';
+  $('f-rem').value   = '';
+  $('f-rec').value   = CUR_USER.name;
+  $('f-url').value   = '';
+  styleFrm(isR, false);
+  $('ai-box').style.display = CLAUDE_KEY ? '' : 'none';
+  $('mbd-frm').classList.remove('hidden');
+}
+
+function openEdit(id) {
+  const r = ALL.find(x => x.id === id);
+  if (!r) return;
+  EDIT_ID = id;
+  $('f-reg').value   = r.registerNo || '';
+  $('f-date').value  = r.date       || '';
+  $('f-book').value  = r.bookNo     || '';
+  $('f-from').value  = r.from       || '';
+  $('f-to').value    = r.to         || '';
+  $('f-topic').value = r.topic      || '';
+  $('f-op').value    = r.operation  || '';
+  $('f-rem').value   = r.remark     || '';
+  $('f-rec').value   = r.recorder   || CUR_USER.name;
+  $('f-url').value   = r.fileUrl    || '';
+  styleFrm(r.type === 'RECEIVE', true);
+  $('ai-box').style.display = 'none';
+  $('mbd-frm').classList.remove('hidden');
+}
+
+function styleFrm(isR, isEdit) {
+  $('f-ttl').className = 'mfrm-ttl ' + (isR?'r':'s');
+  $('f-ttl').textContent = isEdit ? '✏️ แก้ไขรายการ' : (isR?'➕ ลงทะเบียนรับ':'➕ ลงทะเบียนส่ง');
+  $('f-sub').textContent = isEdit ? 'แก้ไขข้อมูลเอกสาร' : (isR?'(ทบ.๑๐๑)':'(ทบ.๑๐๒)');
+  $('savbtn').className = 'savbtn ' + (isR?'r':'s');
+}
+
+function closeFrm() { $('mbd-frm').classList.add('hidden'); }
+function closeFrmBd(e) { if (e.target === $('mbd-frm')) closeFrm(); }
+
+function getNextNo() {
+  const recs = ALL.filter(r => r.type === TAB);
+  if (!recs.length) return '1';
+  const max = recs.reduce((m,r) => {
+    const n = parseInt((r.registerNo||'').replace(/\D/g,'')||'0');
+    return n > m ? n : m;
+  }, 0);
+  return String(max + 1);
+}
+function autoNo() { $('f-reg').value = getNextNo(); }
+
+/* ─── SAVE ───────────────────────────────────────────── */
+async function saveRec() {
+  const reg   = $('f-reg').value.trim();
+  const date  = $('f-date').value;
+  const topic = $('f-topic').value.trim();
+  if (!reg || !date || !topic) { toast('กรุณากรอกข้อมูลที่จำเป็น (*)', 'err'); return; }
+
+  const btn = $('savbtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const type = EDIT_ID ? (ALL.find(r=>r.id===EDIT_ID)||{}).type || TAB : TAB;
+  const rec = {
+    id:         EDIT_ID || 'reg_' + Date.now(),
+    type,
+    registerNo: reg,
+    bookNo:     $('f-book').value.trim(),
+    date,
+    from:       $('f-from').value.trim(),
+    to:         $('f-to').value.trim(),
+    topic,
+    operation:  $('f-op').value.trim(),
+    remark:     $('f-rem').value.trim(),
+    fileUrl:    $('f-url').value.trim(),
+    recorder:   $('f-rec').value.trim() || CUR_USER.name,
+    timestamp:  new Date().toISOString()
+  };
+
+  try {
+    const form = new FormData();
+    form.append('payload', JSON.stringify({ action: EDIT_ID?'update':'add', record: rec }));
+    const r = await fetch(GAS_URL, { method:'POST', body: form });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    if (EDIT_ID) { ALL = ALL.map(x => x.id === rec.id ? rec : x); toast('แก้ไขเรียบร้อย ✓','ok'); }
+    else         { ALL.unshift(rec); toast('บันทึกเรียบร้อย ✓','ok'); }
+    updateStats(); render(); closeFrm();
+  } catch (err) {
+    toast('บันทึกไม่สำเร็จ: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 บันทึกข้อมูล';
+  }
+}
+
+/* ─── DELETE ─────────────────────────────────────────── */
+async function delRec(id) {
+  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  try {
+    const form = new FormData();
+    form.append('payload', JSON.stringify({ action:'delete', id }));
+    await fetch(GAS_URL, { method:'POST', body: form });
+    ALL = ALL.filter(r => r.id !== id);
+    updateStats(); render();
+    toast('ลบเรียบร้อย','ok');
+  } catch (e) { toast('ลบไม่สำเร็จ','err'); }
+}
+
+/* ─── UPLOAD ─────────────────────────────────────────── */
+async function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('ไฟล์ใหญ่เกิน 5MB','err'); return; }
+  const btn = $('up-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const b64  = await f2b64(file);
+    const form = new FormData();
+    form.append('payload', JSON.stringify({ action:'upload', base64:b64, mimeType:file.type, fileName:file.name }));
+    const r = await fetch(GAS_URL, { method:'POST', body: form });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    $('f-url').value = d.url;
+    toast('อัปโหลดสำเร็จ ✓','ok');
+  } catch (err) { toast('อัปโหลดไม่สำเร็จ: '+err.message,'err'); }
+  finally { btn.disabled = false; btn.textContent = '📎'; e.target.value = ''; }
+}
+
+/* ─── AI SCAN (Claude) ───────────────────────────────── */
+async function handleScan(e) {
+  const file = e.target.files[0];
+  if (!file || !CLAUDE_KEY) return;
+  const btn = $('ai-btn'); const txt = $('ai-txt');
+  btn.disabled = true; txt.textContent = '⏳ Claude กำลังวิเคราะห์ภาพ...';
+  try {
+    const b64  = await f2b64(file);
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': CLAUDE_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 512,
+        messages: [{ role:'user', content:[
+          { type:'image', source:{ type:'base64', media_type: file.type, data: b64 }},
+          { type:'text', text:`วิเคราะห์หนังสือราชการไทยในภาพ ดึงข้อมูลเป็น JSON เท่านั้น ห้ามมีข้อความอื่น:
+{"bookNo":"เลขที่หนังสือ (ที่ ...)","date":"YYYY-MM-DD","from":"หน่วยงาน/ผู้ส่ง","to":"ผู้รับ (เรียน...)","topic":"เรื่อง"}`}
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw  = (data.content?.[0]?.text) || '{}';
+    const m    = raw.match(/\{[\s\S]*?\}/);
+    const info = m ? JSON.parse(m[0]) : {};
+    if (info.bookNo) $('f-book').value  = info.bookNo;
+    if (info.date)   $('f-date').value  = info.date;
+    if (info.from)   $('f-from').value  = info.from;
+    if (info.to)     $('f-to').value    = info.to;
+    if (info.topic)  $('f-topic').value = info.topic;
+    toast('Claude AI กรอกข้อมูลเรียบร้อย ✓','ok');
+  } catch (err) { toast('AI Scan ล้มเหลว: '+err.message,'err'); }
+  finally {
+    btn.disabled = false;
+    txt.textContent = '📷 ถ่ายภาพหนังสือ — AI อ่านข้อมูลให้อัตโนมัติ';
+    e.target.value = '';
+  }
+}
+
+/* ─── DETAIL MODAL ───────────────────────────────────── */
+function openDet(id) {
+  const r = ALL.find(x => x.id === id);
+  if (!r) return;
+  const isR = r.type === 'RECEIVE';
+
+  const dt = $('d-type');
+  dt.className = 'dtype ' + (isR?'r':'s');
+  dt.textContent = isR ? '📥 ทะเบียนรับ' : '📤 ทะเบียนส่ง';
+  $('d-topic').textContent = r.topic || '—';
+  $('d-book').textContent  = r.bookNo || '—';
+  $('d-date').textContent  = r.date ? new Date(r.date).toLocaleDateString('th-TH',{dateStyle:'long'}) : '—';
+
+  const lnk = $('d-link');
+  if (r.fileUrl) { lnk.href = r.fileUrl; lnk.classList.remove('hidden'); }
+  else lnk.classList.add('hidden');
+
+  $('d-body').innerHTML = `
+    <div class="det-blk">
+      <div class="det-grid">
+        <div class="di"><div class="dl">เลขทะเบียน</div><div class="dv mono" style="font-size:22px;font-weight:900">${esc(r.registerNo)}</div></div>
+        <div class="di"><div class="dl">วันที่บันทึก</div><div class="dv" style="font-size:12px">${r.timestamp?new Date(r.timestamp).toLocaleDateString('th-TH'):'—'}</div></div>
+      </div>
+      <div class="dhr"></div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div class="det-ftrow"><div class="dl">จาก</div><div class="det-ftval">${esc(r.from||'—')}</div></div>
+        <div class="det-ftrow"><div class="dl">ถึง</div><div class="det-ftval">${esc(r.to||'—')}</div></div>
+      </div>
+      ${r.recorder?`<div class="det-rec"><span class="dl">ผู้บันทึก/รับ</span><span class="rec-b">${esc(r.recorder)}</span></div>`:''}
+    </div>
+
+    ${r.fileUrl?`
+    <div class="qr-sec">
+      <div class="qr-lbl">🔗 Digital Access</div>
+      <div class="qr-img"><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(r.fileUrl)}" alt="QR"></div>
+      <p style="font-size:11px;color:var(--muted)">สแกนเพื่อเปิดเอกสารฉบับจริง</p>
+      <div class="qr-url">
+        <input type="text" readonly value="${esc(r.fileUrl)}">
+        <button class="cpybtn" onclick="cpyUrl('${esc(r.fileUrl)}')" title="คัดลอก">📋</button>
+      </div>
+    </div>`:''}
+
+    ${r.operation?`<div><div class="dl" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">การปฏิบัติ</div><div class="det-note op">${esc(r.operation)}</div></div>`:''}
+    ${r.remark?`<div><div class="dl" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px">หมายเหตุ</div><div class="det-note rm">${esc(r.remark)}</div></div>`:''}
+  `;
+
+  // Preview
+  const prev  = $('d-prev');
+  const embed = getEmbed(r.fileUrl);
+  if (embed) {
+    prev.innerHTML = `<iframe src="${embed}" title="Preview" allowfullscreen></iframe>`;
+  } else if (r.fileUrl) {
+    prev.innerHTML = `<div class="prev-ph"><div class="phi">📄</div><p>ไม่สามารถแสดงตัวอย่างได้</p><a href="${esc(r.fileUrl)}" target="_blank">ดาวน์โหลด / เปิดไฟล์</a></div>`;
+  } else {
+    prev.innerHTML = `<div class="prev-ph"><div class="phi">📄</div><p>ไม่มีไฟล์แนบ</p></div>`;
+  }
+
+  $('mbd-det').classList.remove('hidden');
+}
+
+function closeDet() { $('mbd-det').classList.add('hidden'); }
+function closeDetBd(e) { if (e.target === $('mbd-det')) closeDet(); }
+function cpyUrl(url) { navigator.clipboard.writeText(url); toast('คัดลอกลิงก์แล้ว ✓','ok'); }
+
+/* ─── HELPERS ────────────────────────────────────────── */
+function getEmbed(url) {
+  if (!url) return '';
+  const m = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? `https://drive.google.com/file/d/${m[1]}/preview` : '';
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return isNaN(dt) ? d : dt.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+}
+function f2b64(file) {
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(file); });
+}
+function toast(msg, type='') {
+  const w=$('tw'), el=document.createElement('div');
+  el.className='toast '+type; el.textContent=msg;
+  w.appendChild(el); setTimeout(()=>el.remove(),3500);
+}
+
+/* ─── START ──────────────────────────────────────────── */
+init();
+</script>
+</body>
+</html>
