@@ -470,13 +470,14 @@ select option { background: var(--surf); }
 }
 
 /* ── Dashboard Tab ── */
-.dash { display:none; padding:16px; flex-direction:column; gap:18px; }
+.dash { display:none; padding:12px; flex-direction:column; gap:14px; }
 .dash.active { display:flex; }
-.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-@media(max-width:600px){ .dash-row { grid-template-columns:1fr; } }
+.dash-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:640px){ .dash-row { grid-template-columns:1fr; } }
 .dash-card {
   background:var(--surf); border:1px solid var(--bdr2);
-  border-radius:14px; padding:16px; position:relative; overflow:hidden;
+  border-radius:14px; padding:14px 14px 12px; position:relative; overflow:hidden;
+  min-width:0;
 }
 .dash-card::before {
   content:''; position:absolute; top:0; left:0; right:0; height:2px;
@@ -486,9 +487,17 @@ select option { background: var(--surf); }
 .dash-card.c3::before { background:var(--orange); }
 .dash-card.c4::before { background:var(--blue); }
 .dash-ttl { font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.6px; color:var(--muted); margin-bottom:12px;
+  letter-spacing:.6px; color:var(--muted); margin-bottom:10px;
   display:flex; align-items:center; gap:5px; }
-.dash-card canvas { width:100% !important; }
+/* Responsive chart wrapper — prevents canvas overflow on mobile */
+.chart-wrap { position:relative; width:100%; }
+.chart-wrap.bar { aspect-ratio:16/9; min-height:160px; max-height:240px; }
+.chart-wrap.pie { aspect-ratio:1/1; max-width:220px; margin:0 auto; }
+@media(max-width:400px){
+  .chart-wrap.bar { aspect-ratio:4/3; }
+  .chart-wrap.pie { max-width:170px; }
+}
+.dash-card canvas { position:absolute; inset:0; width:100% !important; height:100% !important; }
 .dash-card-full { grid-column:1/-1; }
 .month-tbl { width:100%; border-collapse:collapse; font-size:12px; }
 .month-tbl th { padding:7px 10px; text-align:left; color:var(--brass3);
@@ -510,6 +519,17 @@ select option { background: var(--surf); }
 .dash-empty { text-align:center; color:var(--muted); font-size:13px; padding:32px; }
 
 .hidden { display: none !important; }
+
+/* ── Upload progress bar ── */
+.up-lbl { cursor:pointer; user-select:none; }
+.up-prog {
+  height: 3px; border-radius: 2px; background: var(--bdr2);
+  margin-top: 5px; overflow: hidden;
+}
+.up-prog-inner {
+  height: 100%; background: linear-gradient(90deg, var(--green), var(--olive2));
+  border-radius: 2px; width: 0%; transition: width .35s ease;
+}
 </style>
 </head>
 <body>
@@ -630,11 +650,11 @@ select option { background: var(--surf); }
     <div class="dash-row">
       <div class="dash-card c1">
         <div class="dash-ttl">📈 รับ-ส่ง รายเดือน (6 เดือนล่าสุด)</div>
-        <canvas id="ch-bar" height="180"></canvas>
+        <div class="chart-wrap bar"><canvas id="ch-bar"></canvas></div>
       </div>
       <div class="dash-card c2">
         <div class="dash-ttl">🥧 สัดส่วนรับ vs ส่ง</div>
-        <canvas id="ch-pie" height="180"></canvas>
+        <div class="chart-wrap pie"><canvas id="ch-pie"></canvas></div>
       </div>
     </div>
     <div class="dash-row">
@@ -670,10 +690,10 @@ select option { background: var(--surf); }
       <!-- AI Scan -->
       <div class="ai-box" id="ai-box">
         <div class="ai-lbl">✨ Claude AI Smart Scan</div>
-        <button class="ai-btn" id="ai-btn" type="button" onclick="document.getElementById('fi-scan').click()">
+        <label class="ai-btn" id="ai-btn" for="fi-scan" style="cursor:pointer">
           <span id="ai-txt">📷 ถ่ายภาพหนังสือ — AI อ่านข้อมูลให้อัตโนมัติ</span>
-        </button>
-        <input type="file" id="fi-scan" accept="image/*" style="display:none" onchange="handleScan(event)">
+        </label>
+        <input type="file" id="fi-scan" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="handleScan(event)">
       </div>
 
       <!-- เลขทะเบียน + วันที่ -->
@@ -738,9 +758,13 @@ select option { background: var(--surf); }
         <label class="flbl">เอกสารแนบ (URL หรืออัปโหลด)</label>
         <div class="frow">
           <input type="text" id="f-url" placeholder="https://drive.google.com/...">
-          <button class="smb" type="button" id="up-btn" onclick="document.getElementById('fi-up').click()">📎</button>
-          <input type="file" id="fi-up" style="display:none" onchange="handleUpload(event)">
+          <label class="smb up-lbl" id="up-btn" for="fi-up">📎</label>
+          <input type="file" id="fi-up" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" onchange="handleUpload(event)" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif">
         </div>
+      </div>
+      <!-- Upload progress bar -->
+      <div class="up-prog hidden" id="up-prog">
+        <div class="up-prog-inner" id="up-prog-bar"></div>
       </div>
 
     </div>
@@ -1112,20 +1136,50 @@ async function delRec(id) {
 async function handleUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 5*1024*1024) { toast('ไฟล์ใหญ่เกิน 5MB','err'); return; }
-  const btn = $('up-btn');
-  btn.disabled = true; btn.textContent = '⏳';
+  if (file.size > 10*1024*1024) { toast('ไฟล์ใหญ่เกิน 10MB','err'); return; }
+
+  const lbl  = $('up-btn');
+  const prog = $('up-prog');
+  const bar  = $('up-prog-bar');
+
+  // show progress UI
+  lbl.textContent = '⏳';
+  lbl.style.pointerEvents = 'none';
+  if (prog) { prog.classList.remove('hidden'); bar.style.width = '30%'; }
+
   try {
-    const b64  = await f2b64(file);
+    const b64 = await f2b64(file);
+    if (prog) bar.style.width = '60%';
+
+    // GAS has 6MB POST limit — warn if base64 is large
+    if (b64.length > 7*1024*1024) {
+      throw new Error('ไฟล์ใหญ่เกินขีดจำกัด GAS (ประมาณ 5MB)');
+    }
+
     const form = new FormData();
-    form.append('payload', JSON.stringify({ action:'upload', base64:b64, mimeType:file.type, fileName:file.name }));
-    const r = await fetch(GAS_URL, { method:'POST', body: form });
+    form.append('payload', JSON.stringify({
+      action: 'upload', base64: b64,
+      mimeType: file.type || 'application/octet-stream',
+      fileName: file.name
+    }));
+
+    if (prog) bar.style.width = '80%';
+    const r = await fetch(GAS_URL, { method: 'POST', body: form });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     if (d.error) throw new Error(d.error);
+
+    if (prog) bar.style.width = '100%';
     $('f-url').value = d.url;
-    toast('อัปโหลดสำเร็จ ✓','ok');
-  } catch (err) { toast('อัปโหลดไม่สำเร็จ: '+err.message,'err'); }
-  finally { btn.disabled = false; btn.textContent = '📎'; e.target.value = ''; }
+    toast('อัปโหลดสำเร็จ ✓ — ' + file.name, 'ok');
+  } catch (err) {
+    toast('อัปโหลดไม่สำเร็จ: ' + err.message, 'err');
+  } finally {
+    lbl.textContent = '📎';
+    lbl.style.pointerEvents = '';
+    e.target.value = '';
+    setTimeout(() => { if(prog) prog.classList.add('hidden'); bar.style.width = '0%'; }, 900);
+  }
 }
 
 /* ─── AI SCAN (Claude) ───────────────────────────────── */
@@ -1133,7 +1187,7 @@ async function handleScan(e) {
   const file = e.target.files[0];
   if (!file || !CLAUDE_KEY) return;
   const btn = $('ai-btn'); const txt = $('ai-txt');
-  btn.disabled = true; txt.textContent = '⏳ Claude กำลังวิเคราะห์ภาพ...';
+  btn.style.pointerEvents = 'none'; btn.style.opacity = '.5'; txt.textContent = '⏳ Claude กำลังวิเคราะห์ภาพ...';
   try {
     const b64  = await f2b64(file);
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1166,7 +1220,7 @@ async function handleScan(e) {
     toast('Claude AI กรอกข้อมูลเรียบร้อย ✓','ok');
   } catch (err) { toast('AI Scan ล้มเหลว: '+err.message,'err'); }
   finally {
-    btn.disabled = false;
+    btn.style.pointerEvents = ''; btn.style.opacity = '';
     txt.textContent = '📷 ถ่ายภาพหนังสือ — AI อ่านข้อมูลให้อัตโนมัติ';
     e.target.value = '';
   }
@@ -1288,10 +1342,12 @@ function renderDash() {
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ labels:{ color:'#b8bc98', font:{size:11} } } },
+        plugins:{
+          legend:{ labels:{ color:'#b8bc98', font:{size:11}, boxWidth:12 } }
+        },
         scales:{
-          x:{ ticks:{color:'#7a8060',font:{size:10}}, grid:{color:'rgba(74,85,53,.3)'} },
-          y:{ ticks:{color:'#7a8060',font:{size:10},stepSize:1}, grid:{color:'rgba(74,85,53,.3)'}, beginAtZero:true }
+          x:{ ticks:{color:'#7a8060',font:{size:10},maxRotation:0}, grid:{color:'rgba(74,85,53,.3)'} },
+          y:{ ticks:{color:'#7a8060',font:{size:10},stepSize:1,precision:0}, grid:{color:'rgba(74,85,53,.3)'}, beginAtZero:true }
         }
       }
     });
@@ -1314,10 +1370,10 @@ function renderDash() {
       options:{
         responsive:true, maintainAspectRatio:false,
         plugins:{
-          legend:{ labels:{ color:'#b8bc98', font:{size:12} } },
+          legend:{ position:'bottom', labels:{ color:'#b8bc98', font:{size:11}, boxWidth:12, padding:10 } },
           tooltip:{ callbacks:{ label: ctx => ctx.label+': '+ctx.parsed+' ฉบับ' } }
         },
-        cutout:'60%'
+        cutout:'55%'
       }
     });
   }
